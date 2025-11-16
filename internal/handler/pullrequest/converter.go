@@ -7,9 +7,8 @@ func ToPullRequestDTO(pr *model.PullRequest) *PullRequestDTO {
 		PullRequestID:     pr.PullRequestID,
 		PullRequestName:   pr.PullRequestName,
 		AuthorID:          pr.AuthorID,
-		Status:            string(pr.Status),
+		Status:            pr.Status,
 		AssignedReviewers: pr.AssignedReviewers,
-		CreatedAt:         pr.CreatedAt,
 		MergedAt:          pr.MergedAt,
 	}
 }

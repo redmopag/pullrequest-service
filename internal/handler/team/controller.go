@@ -28,7 +28,8 @@ func (c *TeamController) CreateTeam(w http.ResponseWriter, r *http.Request) erro
 	if err != nil {
 		return err
 	}
-	handler.WriteJSONResponse(w, http.StatusCreated, ModelToDTO(createdTeam))
+	response := map[string]any{"team": ModelToDTO(createdTeam)}
+	handler.WriteJSONResponse(w, http.StatusCreated, response)
 	return nil
 }
 

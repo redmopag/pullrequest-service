@@ -20,7 +20,7 @@ func ErrorHandler(h HandlerFunc) http.HandlerFunc {
 
 var errorStatusMap = map[string]int{
 	"NOT_FOUND":    http.StatusNotFound,
-	"TEAM_EXISTS":  http.StatusConflict,
+	"TEAM_EXISTS":  http.StatusBadRequest,
 	"PR_EXISTS":    http.StatusConflict,
 	"PR_MERGED":    http.StatusConflict,
 	"NOT_ASSIGNED": http.StatusConflict,
@@ -29,12 +29,13 @@ var errorStatusMap = map[string]int{
 }
 
 func renderError(w http.ResponseWriter, err error) {
-	log.Printf("unhandled error: %v", err)
+	log.Printf("error handled: %v", err)
 
 	var domainErr *model.DomainError
 	if errors.As(err, &domainErr) {
 		if status, ok := errorStatusMap[domainErr.Code]; ok {
-			WriteJSONResponse(w, status, domainErr)
+			errResponse := map[string]any{"error": domainErr}
+			WriteJSONResponse(w, status, errResponse)
 			return
 		}
 	}

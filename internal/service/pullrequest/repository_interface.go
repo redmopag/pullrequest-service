@@ -11,6 +11,7 @@ type PullRequestRepository interface {
 	Create(ctx context.Context, pr *model.PullRequest) (*model.PullRequest, error)
 	Merge(ctx context.Context, id string) (*model.PullRequest, error)
 	UpdateReviewer(ctx context.Context, pullRequestID, oldReviewerID, newReviewerID string) error
+	GetUsersPullRequests(ctx context.Context, userId string) ([]model.PullRequest, error)
 }
 
 type UserService interface {

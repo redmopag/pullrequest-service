@@ -8,6 +8,5 @@ import (
 
 type UserRepository interface {
 	UpdateStatus(ctx context.Context, userId string, isActive bool) (*model.User, error)
-	GetUsersPullRequests(ctx context.Context, userId string) ([]model.PullRequest, error)
 	GetUserByID(ctx context.Context, userId string) (*model.User, error)
 }

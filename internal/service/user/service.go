@@ -18,10 +18,6 @@ func (service *UserService) SetActiveStatus(ctx context.Context, userId string, 
 	return service.userRepository.UpdateStatus(ctx, userId, isActive)
 }
 
-func (service *UserService) GetUsersPullRequests(ctx context.Context, userId string) ([]model.PullRequest, error) {
-	return service.userRepository.GetUsersPullRequests(ctx, userId)
-}
-
 func (service *UserService) GetUserByID(ctx context.Context, userId string) (*model.User, error) {
 	return service.userRepository.GetUserByID(ctx, userId)
 }

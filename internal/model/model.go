@@ -23,7 +23,7 @@ type PullRequest struct {
 	Status            PullRequestStatus
 	AssignedReviewers []string
 	CreatedAt         time.Time
-	MergedAt          time.Time
+	MergedAt          *time.Time
 }
 
 type PullRequestStatus string

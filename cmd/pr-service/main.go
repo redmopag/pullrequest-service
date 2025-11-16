@@ -35,7 +35,7 @@ func main() {
 	teamService := teamService.NewTeamService(teamRepository)
 	pullRequestService := prService.NewPullRequestService(pullRequestRepository, userService, teamService)
 
-	userController := userHandler.NewUserController(userService)
+	userController := userHandler.NewUserController(userService, pullRequestService)
 	teamController := teamHandler.NewTeamController(teamService)
 	pullRequestController := prHandler.NewPullRequestController(pullRequestService)
 
@@ -45,7 +45,6 @@ func main() {
 	router.SetupPullRequestRoutes(mux, pullRequestController)
 
 	srv := server.NewServer(cfg.Server.Port, mux)
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -53,7 +52,5 @@ func main() {
 	log.Println("service started")
 
 	<-ctx.Done()
-
-	log.Println("shutting down server...")
 	srv.GracefulShutdown()
 }

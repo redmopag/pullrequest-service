@@ -209,3 +209,58 @@ func (r *PullRequestRepository) attachReviewersToPullRequests(ctx context.Contex
 
 	return prs, nil
 }
+
+func (r *PullRequestRepository) GetUsersPullRequests(ctx context.Context, userId string) ([]model.PullRequest, error) {
+	sqlPr, argsPr, err := squirrel.Select(
+		"pr.pull_request_id",
+		"pr.pull_request_name",
+		"pr.author_id",
+		"pr.status",
+		"pr.created_at",
+		"pr.merged_at",
+	).
+		From("pull_requests pr").
+		Join("reviewers r ON pr.pull_request_id = r.pull_request_id").
+		Where(squirrel.Eq{"r.user_id": userId}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build pull requests query: %w", err)
+	}
+
+	rows, err := r.pgxpool.Query(ctx, sqlPr, argsPr...)
+	if err != nil {
+		return nil, fmt.Errorf("query pull requests: %w", err)
+	}
+	defer rows.Close()
+
+	var pullRequests []model.PullRequest
+	for rows.Next() {
+		var pr model.PullRequest
+		if err := rows.Scan(
+			&pr.PullRequestID,
+			&pr.PullRequestName,
+			&pr.AuthorID,
+			&pr.Status,
+			&pr.CreatedAt,
+			&pr.MergedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan pull request: %w", err)
+		}
+		pullRequests = append(pullRequests, pr)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+	if len(pullRequests) == 0 {
+		return []model.PullRequest{}, nil
+	}
+
+	updatedPRs, err := r.attachReviewersToPullRequests(ctx, pullRequests)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedPRs, nil
+}

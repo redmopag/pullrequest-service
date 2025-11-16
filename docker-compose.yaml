@@ -9,9 +9,48 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     ports:
       - "${DB_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: ghcr.io/pressly/goose:latest
+    container_name: pull-request-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: [
+      "goose",
+      "-dir=/migrations",
+      "postgres",
+      "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable",
+      "up"
+    ]
+    restart: "on-failure"
+
+  app:
+    build: .
+    container_name: pull-request-service
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: 8080
+      DB_DRIVER: postgres
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: 5432
+      DB_HOST: postgres       
+    ports:
+      - "${SERVER_PORT}:8080"
 
 volumes:
   pgdata:

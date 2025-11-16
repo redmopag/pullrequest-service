@@ -10,7 +10,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const pingTimeout = 500 * time.Millisecond
+const (
+	pingAttempts = 3
+	pingTimeout  = 500 * time.Millisecond
+)
 
 func InitDBPool(cnf *config.Config) *pgxpool.Pool {
 	pgxConf := createPgxConf(cnf)
@@ -23,7 +26,6 @@ func InitDBPool(cnf *config.Config) *pgxpool.Pool {
 		log.Fatalf("unable to create connection pool: %v\n", err)
 	}
 
-	pingAttempts := 3
 	pingConnection(pingAttempts, dbPool)
 
 	log.Println("Database connection pool established")

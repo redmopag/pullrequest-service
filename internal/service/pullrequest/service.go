@@ -26,12 +26,12 @@ func NewPullRequestService(pullRequestRepository PullRequestRepository, userServ
 func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID string) (*model.PullRequest, error) {
 	author, err := s.userService.GetUserByID(ctx, authorID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get author: %w", err)
+		return nil, fmt.Errorf("get author: %w", err)
 	}
 
 	team, err := s.teamService.GetTeamByName(ctx, author.TeamName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get team: %w", err)
+		return nil, fmt.Errorf("get team: %w", err)
 	}
 
 	reviewers := s.selectReviewers(authorID, team.Users)
@@ -47,7 +47,7 @@ func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID 
 
 	createdPR, err := s.pullRequestRepository.Create(ctx, pr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create PR: %w", err)
+		return nil, fmt.Errorf("create PR: %w", err)
 	}
 
 	return createdPR, nil
@@ -56,7 +56,7 @@ func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID 
 func (s *PullRequestService) Merge(ctx context.Context, prID string) (*model.PullRequest, error) {
 	pr, err := s.pullRequestRepository.Get(ctx, prID)
 	if err != nil {
-		return nil, fmt.Errorf("get PR: %w", err)
+		return nil, fmt.Errorf("get PR to merge: %w", err)
 	}
 
 	if pr.Status == model.PullRequestMerged {
@@ -74,7 +74,7 @@ func (s *PullRequestService) Merge(ctx context.Context, prID string) (*model.Pul
 func (s *PullRequestService) Reassign(ctx context.Context, prID, oldReviewerID string) (*model.ReassignResponse, error) {
 	pr, err := s.pullRequestRepository.Get(ctx, prID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get PR: %w", err)
+		return nil, fmt.Errorf("get PR to reassign: %w", err)
 	}
 
 	if pr.Status == model.PullRequestMerged {
@@ -94,12 +94,12 @@ func (s *PullRequestService) Reassign(ctx context.Context, prID, oldReviewerID s
 
 	oldReviewer, err := s.userService.GetUserByID(ctx, oldReviewerID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get old reviewer: %w", err)
+		return nil, fmt.Errorf("get old reviewer: %w", err)
 	}
 
 	team, err := s.teamService.GetTeamByName(ctx, oldReviewer.TeamName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get team: %w", err)
+		return nil, fmt.Errorf("get team: %w", err)
 	}
 
 	newReviewerID, err := s.selectNewReviewer(pr.AuthorID, pr.AssignedReviewers, team.Users)
@@ -109,18 +109,22 @@ func (s *PullRequestService) Reassign(ctx context.Context, prID, oldReviewerID s
 
 	err = s.pullRequestRepository.UpdateReviewer(ctx, prID, oldReviewerID, newReviewerID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update reviewer: %w", err)
+		return nil, fmt.Errorf("update reviewer: %w", err)
 	}
 
 	updatedPR, err := s.pullRequestRepository.Get(ctx, prID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get updated PR: %w", err)
+		return nil, fmt.Errorf("get updated PR: %w", err)
 	}
 
 	return &model.ReassignResponse{
 		PullRequest: updatedPR,
 		ReplacedBy:  newReviewerID,
 	}, nil
+}
+
+func (s *PullRequestService) GetPullRequestsForUserReview(ctx context.Context, userId string) ([]model.PullRequest, error) {
+	return s.pullRequestRepository.GetUsersPullRequests(ctx, userId)
 }
 
 func (s *PullRequestService) selectReviewers(authorID string, users []model.User) []string {

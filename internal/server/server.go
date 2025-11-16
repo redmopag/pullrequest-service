@@ -32,7 +32,7 @@ func (server *Server) GracefulShutdown() {
 	shutdwonCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.httpServer.Shutdown(shutdwonCtx); err != nil {
-		log.Printf("Server Shutdown Failed:%+v", err)
+		log.Printf("server shutdown failed:%+v", err)
 	}
-	log.Println("server Exited Properly")
+	log.Println("server exited Properly")
 }

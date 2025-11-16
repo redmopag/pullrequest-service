@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/avito/internship/pr-service/internal/dto"
 	"github.com/avito/internship/pr-service/internal/handler"
 	"github.com/avito/internship/pr-service/internal/model"
 )
@@ -18,7 +17,7 @@ func NewPullRequestController(pullRequestService PullRequestService) *PullReques
 }
 
 func (c *PullRequestController) Create(w http.ResponseWriter, r *http.Request) error {
-	var req dto.CreatePullRequestRequest
+	var req CreatePullRequestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return model.ErrBadJSONRequest
 	}
@@ -28,12 +27,13 @@ func (c *PullRequestController) Create(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	handler.WriteJSONResponse(w, http.StatusCreated, ToPullRequestDTO(pr))
+	response := map[string]any{"pr": ToPullRequestDTO(pr)}
+	handler.WriteJSONResponse(w, http.StatusCreated, response)
 	return nil
 }
 
 func (c *PullRequestController) Merge(w http.ResponseWriter, r *http.Request) error {
-	var req dto.MergePullRequestRequest
+	var req MergePullRequestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return model.ErrBadJSONRequest
 	}
@@ -48,7 +48,7 @@ func (c *PullRequestController) Merge(w http.ResponseWriter, r *http.Request) er
 }
 
 func (c *PullRequestController) Reassign(w http.ResponseWriter, r *http.Request) error {
-	var req dto.ReassignPullRequestRequest
+	var req ReassignPullRequestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return model.ErrBadJSONRequest
 	}

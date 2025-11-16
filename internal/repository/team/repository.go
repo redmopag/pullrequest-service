@@ -2,6 +2,7 @@ package team
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/Masterminds/squirrel"
@@ -69,6 +70,7 @@ func insertUsers(ctx context.Context, team *model.Team, tx pgx.Tx) error {
 		for _, user := range team.Users {
 			builder = builder.Values(team.TeamName, user.UserID, user.Username, user.IsActive)
 		}
+		builder = builder.Suffix("ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username, team_name = EXCLUDED.team_name, is_active = EXCLUDED.is_active")
 		sql, args, err := builder.ToSql()
 		if err != nil {
 			return err
@@ -82,35 +84,55 @@ func insertUsers(ctx context.Context, team *model.Team, tx pgx.Tx) error {
 }
 
 func (r *TeamRepository) GetTeamByName(ctx context.Context, teamName string) (*model.Team, error) {
-	sql, args, err := squirrel.Select("t.team_name", "u.user_id", "u.username", "u.is_active").
+	sqlBuilder, args, err := squirrel.Select("t.team_name", "u.user_id", "u.username", "u.is_active").
 		From("teams t").
 		LeftJoin("users u ON t.team_name = u.team_name").
 		Where(squirrel.Eq{"t.team_name": teamName}).
-		Suffix("ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username, team_name = EXCLUDED.team_name, is_active = EXCLUDED.is_active").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.pgxpool.Query(ctx, sql, args...)
+	rows, err := r.pgxpool.Query(ctx, sqlBuilder, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var team model.Team
+	teamFound := false
 	for rows.Next() {
-		var user model.User
-		err := rows.Scan(&team.TeamName, &user.UserID, &user.Username, &user.IsActive)
+		var userID sql.NullString
+		var username sql.NullString
+		var isActive sql.NullBool
+
+		var scannedTeamName string
+
+		err := rows.Scan(&scannedTeamName, &userID, &username, &isActive)
 		if err != nil {
 			return nil, err
 		}
-		team.TeamName = teamName
-		if user.UserID != "" {
+
+		if !teamFound {
+			team.TeamName = scannedTeamName
+			teamFound = true
+		}
+
+		if userID.Valid {
+			user := model.User{
+				UserID:   userID.String,
+				Username: username.String,
+				IsActive: isActive.Bool,
+				TeamName: team.TeamName,
+			}
 			team.Users = append(team.Users, user)
 		}
 	}
-	if len(team.TeamName) == 0 {
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if !teamFound {
 		return nil, model.ErrTeamNotFound
 	}
 	return &team, nil

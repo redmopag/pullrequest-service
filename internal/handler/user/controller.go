@@ -10,10 +10,11 @@ import (
 
 type UserController struct {
 	userService UserService
+	prService   PullRequestService
 }
 
-func NewUserController(userService UserService) *UserController {
-	return &UserController{userService: userService}
+func NewUserController(userService UserService, prService PullRequestService) *UserController {
+	return &UserController{userService: userService, prService: prService}
 }
 
 func (controller *UserController) SetIsActive(w http.ResponseWriter, r *http.Request) error {
@@ -25,13 +26,14 @@ func (controller *UserController) SetIsActive(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return err
 	}
-	handler.WriteJSONResponse(w, http.StatusOK, map[string]any{"user:": ToUserResponse(user)})
+	response := map[string]any{"user": ToUserResponse(user)}
+	handler.WriteJSONResponse(w, http.StatusOK, response)
 	return nil
 }
 
 func (controller *UserController) GetUsersPullRequests(w http.ResponseWriter, r *http.Request) error {
 	userId := r.URL.Query().Get("user_id")
-	pullRequests, err := controller.userService.GetUsersPullRequests(r.Context(), userId)
+	pullRequests, err := controller.prService.GetPullRequestsForUserReview(r.Context(), userId)
 	if err != nil {
 		return err
 	}

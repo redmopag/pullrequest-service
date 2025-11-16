@@ -8,6 +8,9 @@ import (
 
 type UserService interface {
 	SetActiveStatus(ctx context.Context, userId string, isActive bool) (*model.User, error)
-	GetUsersPullRequests(ctx context.Context, userId string) ([]model.PullRequest, error)
 	GetUserByID(ctx context.Context, userId string) (*model.User, error)
+}
+
+type PullRequestService interface {
+	GetPullRequestsForUserReview(ctx context.Context, userId string) ([]model.PullRequest, error)
 }
