@@ -124,6 +124,9 @@ func (s *PullRequestService) Reassign(ctx context.Context, prID, oldReviewerID s
 }
 
 func (s *PullRequestService) GetPullRequestsForUserReview(ctx context.Context, userId string) ([]model.PullRequest, error) {
+	if _, err := s.userService.GetUserByID(ctx, userId); err != nil {
+		return nil, err
+	}
 	return s.pullRequestRepository.GetUsersPullRequests(ctx, userId)
 }
 
